@@ -6,7 +6,7 @@ Let's say you want to execute `echo yayk8s` at 2am on Friday, the 1st of March 2
 
 ```bash
 $ cat runat.yaml
-apiVersion: at.pk.kubernetes.sh/v1alpha1
+apiVersion: cnat.kubernetes.sh/v1alpha1
 kind: At
 metadata:
   name: simplex
