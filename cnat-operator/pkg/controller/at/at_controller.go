@@ -105,7 +105,7 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 	found := &corev1.Pod{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Launching command at:", instance.Spec.Schedule)
+		reqLogger.Info("Launching command at", "Scheduling for:", instance.Spec.Schedule)
 
 		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
 		err = r.client.Create(context.TODO(), pod)
