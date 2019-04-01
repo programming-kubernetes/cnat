@@ -1,0 +1,7 @@
+apiVersion: cnat.kubernetes.sh/v1alpha1
+kind: At
+metadata:
+  name: example-at
+spec:
+  # Add fields here
+  size: 3
