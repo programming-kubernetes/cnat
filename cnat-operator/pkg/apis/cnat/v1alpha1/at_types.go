@@ -7,6 +7,8 @@ import (
 // AtSpec defines the desired state of At
 // +k8s:openapi-gen=true
 type AtSpec struct {
+	// Schedule is the desired time the command is supposed to be executed.
+	// Note: the format used here is UTC time https://www.utctime.net
 	Schedule string `json:"schedule,omitempty"`
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
