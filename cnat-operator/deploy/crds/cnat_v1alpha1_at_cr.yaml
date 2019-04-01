@@ -3,5 +3,4 @@ kind: At
 metadata:
   name: example-at
 spec:
-  # Add fields here
-  size: 3
+  schedule: "2019-04-01T18:00:00Z"
