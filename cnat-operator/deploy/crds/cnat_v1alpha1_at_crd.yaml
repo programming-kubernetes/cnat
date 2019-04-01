@@ -22,6 +22,9 @@ spec:
         metadata:
           type: object
         spec:
+          properties:
+            schedule:
+              type: string
           type: object
         status:
           type: object

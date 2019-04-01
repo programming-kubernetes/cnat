@@ -67,7 +67,15 @@ func schema_pkg_apis_cnat_v1alpha1_AtSpec(ref common.ReferenceCallback) common.O
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "AtSpec defines the desired state of At",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"schedule": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Schedule is the desired time the command is supposed to be executed. Note: the format used here is UTC time https://www.utctime.net",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 		Dependencies: []string{},

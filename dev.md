@@ -26,5 +26,5 @@ $ OPERATOR_NAME=cnatop operator-sdk up local --namespace "cnat"
 
 ## Implement business logic
 
-* In [at_types.go](cnat-operator/pkg/apis/cnat/v1alpha1/at_types.go): we modify the `AtSpec` struct to include the respective fields and use `operator-sdk generate k8s` to regenerate code.
+* In [at_types.go](cnat-operator/pkg/apis/cnat/v1alpha1/at_types.go): we modify the `AtSpec` struct to include the respective fields and use `operator-sdk generate k8s` to regenerate code (and `operator-sdk generate k8s` for the OpenAPI bits).
 * In [at_controller.go](cnat-operator/pkg/controller/at/at_controller.go): we modify the `Reconcile(request reconcile.Request)` method to create a pod at the time defined in `Spec.Schedule`.
