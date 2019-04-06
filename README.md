@@ -21,7 +21,7 @@ spec:
     - "echo yayk8s"
 
 $ kubectl apply -f runat.yaml
-at.pk.kubernetes.sh/simplex created
+cnat.kubernetes.sh/simplex created
 
 $ kubectl get at
 NAME               AGE
