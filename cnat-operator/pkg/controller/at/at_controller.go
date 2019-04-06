@@ -2,6 +2,8 @@ package at
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	cnatv1alpha1 "github.com/programming-kubernetes/cnat/cnat-operator/pkg/apis/cnat/v1alpha1"
 
@@ -105,7 +107,10 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 	found := &corev1.Pod{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Launching command at", "Scheduling for:", instance.Spec.Schedule)
+
+		if ready2Launch(instance.Spec.Schedule, 1*time.Second) {
+			reqLogger.Info("Launching command at", "Scheduling for:", instance.Spec.Schedule)
+		}
 
 		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
 		err = r.client.Create(context.TODO(), pod)
@@ -145,4 +150,20 @@ func newPodForCR(cr *cnatv1alpha1.At) *corev1.Pod {
 			},
 		},
 	}
+}
+
+func ready2Launch(schedule string, tolerance time.Duration) bool {
+	now := time.Now().UTC()
+	layout := "2006-01-02T15:04:05Z"
+	s, err := time.Parse(layout, schedule)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	diff := s.Sub(now)
+	fmt.Printf("%v with a diff of %v to %v\n", s, diff, now)
+	if time.Until(s) < time.Duration(tolerance) {
+		return true
+	}
+	return false
 }
