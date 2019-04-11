@@ -21,6 +21,9 @@ cnat.kubernetes.sh/example-at created
 $ kubectl get at
 NAME               AGE
 example-at         20s
+
+$ kubectl logs example-at-pod
+YAY
 ```
 
 Note that the execution time (`schedule`) is given in [UTC](https://www.utctime.net/).
