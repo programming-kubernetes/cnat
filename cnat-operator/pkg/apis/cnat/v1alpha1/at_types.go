@@ -4,6 +4,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	phasePending = "PENDING"
+	phaseDone    = "DONE"
+)
+
 // AtSpec defines the desired state of At
 // +k8s:openapi-gen=true
 type AtSpec struct {
@@ -16,7 +21,9 @@ type AtSpec struct {
 // AtStatus defines the observed state of At
 // +k8s:openapi-gen=true
 type AtStatus struct {
-
+	// Phase represents the state of the schedule: until the command is executed
+	// it is PENDING, afterwards it is DONE.
+	Phase string `json:"phase,omitempty"`
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
 

@@ -87,7 +87,15 @@ func schema_pkg_apis_cnat_v1alpha1_AtStatus(ref common.ReferenceCallback) common
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "AtStatus defines the observed state of At",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Phase represents the state of the schedule: until the command is executed it is PENDING, afterwards it is DONE.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 		Dependencies: []string{},
