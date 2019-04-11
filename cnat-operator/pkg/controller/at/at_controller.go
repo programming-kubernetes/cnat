@@ -74,77 +74,90 @@ type ReconcileAt struct {
 
 // Reconcile reads that state of the cluster for a At object and makes changes based on the state read
 // and what is in the At.Spec
-// Note:
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	reqLogger := log.WithValues("namespace", request.Namespace, "at", request.Name)
 	reqLogger.Info("Reconciling At")
-
 	// Fetch the At instance
 	instance := &cnatv1alpha1.At{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
+			// Request object not found, could have been deleted after reconcile request - return and don't requeue:
 			return reconcile.Result{}, nil
 		}
-		// Error reading the object - requeue the request.
+		// Error reading the object - requeue the request:
 		return reconcile.Result{}, err
 	}
 
-	// Define a new Pod object
-	pod := newPodForCR(instance)
-
-	// Set At instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
-		return reconcile.Result{}, err
+	// If no phase set, default to pending:
+	if instance.Status.Phase == "" {
+		instance.Status.Phase = cnatv1alpha1.PhasePending
 	}
 
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// Check if it's already time to execute the command with a tolerance of 2 second:
-		timetolaunch, cmresult, err := ready2Launch(instance.Spec.Schedule, 2*time.Second)
-		if err != nil {
-			reqLogger.Info("Can't parse schedule", "Schedule parsing failed due to:", err)
+	switch instance.Status.Phase {
+	case cnatv1alpha1.PhaseRunning:
+		// Define a new Pod object
+		pod := newPodForCR(instance)
+		// Set At instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Checked schedule", "Schedule parsing result", cmresult)
-		if timetolaunch {
-			reqLogger.Info("It's time, launching command at", "Scheduled for:", instance.Spec.Schedule)
+		found := &corev1.Pod{}
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
 			err = r.client.Create(context.TODO(), pod)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			// Pod created successfully - don't requeue:
-			return reconcile.Result{}, nil
-		} else {
-			// Not time to launch command yet, requeue to try again in 10 seconds:
-			return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+			instance.Status.Phase = cnatv1alpha1.PhaseDone
 		}
-	} else if err != nil {
+	case cnatv1alpha1.PhaseDone:
+		// Define a new Pod object
+		pod := newPodForCR(instance)
+		found := &corev1.Pod{}
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		if err != nil {
+			// NOP
+		}
+		if found.Status.Phase == corev1.PodRunning {
+			reqLogger.Info("Pod running", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name, "Pod.Phase", found.Status.Phase)
+			maincontainerstate := found.Status.ContainerStatuses[0].State
+			if maincontainerstate.Terminated != nil {
+				reqLogger.Info("Main container terminated", "Reason", maincontainerstate.Terminated.Reason)
+				err := r.client.Delete(context.TODO(), found, client.GracePeriodSeconds(0), client.PropagationPolicy(metav1.DeletePropagationForeground))
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+			}
+		}
+	case cnatv1alpha1.PhasePending:
+	default:
+	}
+
+	// As long as we haven't executed the command we're in PENDING phase
+	// and need to check if it's time already to act:
+	if instance.Status.Phase == cnatv1alpha1.PhasePending {
+		reqLogger.Info("Checking schedule", "Target", instance.Spec.Schedule)
+		// Check if it's already time to execute the command with a tolerance of 2 seconds:
+		timetolaunch, cmresult, err := ready2Launch(instance.Spec.Schedule, 2*time.Second)
+		if err != nil {
+			reqLogger.Info("Schedule parsing failure", "Reason", err)
+			// Error reading the schedule - requeue the request:
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Schedule parsing done", "Result", cmresult)
+		if timetolaunch {
+			reqLogger.Info("It's time!", "Ready to execute", "COMMAND HERE")
+			instance.Status.Phase = cnatv1alpha1.PhaseRunning
+		}
+	}
+
+	// Update the At instance, setting the status to the respective phase:
+	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
 		return reconcile.Result{}, err
 	}
-	// Pod exists and if it has completed the command, get rid of it:
-	if found.Status.Phase == corev1.PodRunning {
-		reqLogger.Info("Pod running", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name, "Pod.Phase", found.Status.Phase)
-		maincontainerstate := found.Status.ContainerStatuses[0].State
-		if maincontainerstate.Terminated != nil {
-			reqLogger.Info("Main container terminated", "Reason", maincontainerstate.Terminated.Reason)
-			err := r.client.Delete(context.TODO(), found, client.GracePeriodSeconds(0), client.PropagationPolicy(metav1.DeletePropagationForeground))
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			// clean-up successful, don't requeue:
-			return reconcile.Result{}, nil
-		}
-	}
-	// Skip reconcile, since pod is running - don't requeue:
-	return reconcile.Result{}, nil
+	// Not yet time to execute the command - requeue to try again in 10 seconds:
+	return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr

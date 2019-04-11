@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	phasePending = "PENDING"
-	phaseDone    = "DONE"
+	PhasePending = "PENDING"
+	PhaseRunning = "RUNNING"
+	PhaseDone    = "DONE"
 )
 
 // AtSpec defines the desired state of At
