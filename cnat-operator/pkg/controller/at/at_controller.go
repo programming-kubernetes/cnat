@@ -124,10 +124,6 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 			maincontainerstate := found.Status.ContainerStatuses[0].State
 			if maincontainerstate.Terminated != nil {
 				reqLogger.Info("Main container terminated", "Reason", maincontainerstate.Terminated.Reason)
-				err := r.client.Delete(context.TODO(), found, client.GracePeriodSeconds(0), client.PropagationPolicy(metav1.DeletePropagationForeground))
-				if err != nil {
-					return reconcile.Result{}, err
-				}
 			}
 		}
 	case cnatv1alpha1.PhasePending:
