@@ -126,12 +126,24 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 			// Not time to launch command yet, requeue to try again in 10 seconds:
 			return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 		}
-
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
-	// Pod already exists - don't requeue:
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
+	// Pod exists and if it has completed the command, get rid of it:
+	if found.Status.Phase == corev1.PodRunning {
+		reqLogger.Info("Pod running", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name, "Pod.Phase", found.Status.Phase)
+		maincontainerstate := found.Status.ContainerStatuses[0].State
+		if maincontainerstate.Terminated != nil {
+			reqLogger.Info("Main container terminated", "Reason", maincontainerstate.Terminated.Reason)
+			err := r.client.Delete(context.TODO(), found, client.GracePeriodSeconds(0), client.PropagationPolicy(metav1.DeletePropagationForeground))
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			// clean-up successful, don't requeue:
+			return reconcile.Result{}, nil
+		}
+	}
+	// Skip reconcile, since pod is running - don't requeue:
 	return reconcile.Result{}, nil
 }
 

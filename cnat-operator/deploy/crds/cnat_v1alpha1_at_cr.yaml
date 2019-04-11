@@ -3,4 +3,4 @@ kind: At
 metadata:
   name: example-at
 spec:
-  schedule: "2019-04-11T10:40:00Z"
+  schedule: "2019-04-11T11:55:00Z"
