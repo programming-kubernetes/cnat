@@ -107,24 +107,30 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 	found := &corev1.Pod{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-
-		if ready2Launch(instance.Spec.Schedule, 1*time.Second) {
-			reqLogger.Info("Launching command at", "Scheduling for:", instance.Spec.Schedule)
-		}
-
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
+		// Check if it's already time to execute the command with a tolerance of 2 second:
+		timetolaunch, cmresult, err := ready2Launch(instance.Spec.Schedule, 2*time.Second)
 		if err != nil {
+			reqLogger.Info("Can't parse schedule", "Schedule parsing failed due to:", err)
 			return reconcile.Result{}, err
 		}
+		reqLogger.Info("Checked schedule", "Schedule parsing result", cmresult)
+		if timetolaunch {
+			reqLogger.Info("It's time, launching command at", "Scheduled for:", instance.Spec.Schedule)
+			err = r.client.Create(context.TODO(), pod)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			// Pod created successfully - don't requeue:
+			return reconcile.Result{}, nil
+		} else {
+			// Not time to launch command yet, requeue to try again in 10 seconds:
+			return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+		}
 
-		// Pod created successfully - don't requeue
-		return reconcile.Result{}, nil
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
-
-	// Pod already exists - don't requeue
+	// Pod already exists - don't requeue:
 	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
 	return reconcile.Result{}, nil
 }
@@ -145,25 +151,27 @@ func newPodForCR(cr *cnatv1alpha1.At) *corev1.Pod {
 				{
 					Name:    "busybox",
 					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
+					Command: []string{"echo", "Boom!"},
 				},
 			},
 		},
 	}
 }
 
-func ready2Launch(schedule string, tolerance time.Duration) bool {
+// ready2Launch return true IFF the schedule is within tolerance, for example:
+// if the schedule is 2019-04-11T10:10:00Z and it's now 2019-04-11T10:10:02Z
+// and the tolerance provided is 5 seconds, then this function returns true.
+func ready2Launch(schedule string, tolerance time.Duration) (bool, string, error) {
 	now := time.Now().UTC()
 	layout := "2006-01-02T15:04:05Z"
 	s, err := time.Parse(layout, schedule)
 	if err != nil {
-		fmt.Println(err)
-		return false
+		return false, "", err
 	}
 	diff := s.Sub(now)
-	fmt.Printf("%v with a diff of %v to %v\n", s, diff, now)
+	cmpresult := fmt.Sprintf("%v with a diff of %v to %v", s, diff, now)
 	if time.Until(s) < time.Duration(tolerance) {
-		return true
+		return true, cmpresult, nil
 	}
-	return false
+	return false, cmpresult, nil
 }
