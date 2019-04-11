@@ -3,6 +3,7 @@ package at
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	cnatv1alpha1 "github.com/programming-kubernetes/cnat/cnat-operator/pkg/apis/cnat/v1alpha1"
@@ -172,7 +173,7 @@ func newPodForCR(cr *cnatv1alpha1.At) *corev1.Pod {
 				{
 					Name:    "busybox",
 					Image:   "busybox",
-					Command: []string{"echo", "Boom!"},
+					Command: strings.Split(cr.Spec.Command, " "),
 				},
 			},
 		},

@@ -2,30 +2,25 @@
 
 The `cnat` (cloud native at) command extends Kubernetes to run a command at a certain point in time in the future, akin to the Linux [at](https://en.wikipedia.org/wiki/At_(command)) command.
 
-Let's say you want to execute `echo yayk8s` at 2am on Friday, the 1st of March 2019. Here's what you would do (given the `cnat` CRD has been registered and the according operator is running):
+Let's say you want to execute `echo YAY` at 2am on 3rd July 2019. Here's what you would do (given the `cnat` CRD has been registered and the according operator is running):
 
 ```bash
 $ cat runat.yaml
 apiVersion: cnat.kubernetes.sh/v1alpha1
 kind: At
 metadata:
-  name: simplex
+  name: example-at
 spec:
-  schedule: 2019-03-01T02:00:00Z
-  containers:
-  - name: shell
-    image: centos:7
-    command:
-    - "bin/bash"
-    - "-c"
-    - "echo yayk8s"
+  schedule: "2019-07-03T02:00:00Z"
+  command: "echo YAY"
+
 
 $ kubectl apply -f runat.yaml
-cnat.kubernetes.sh/simplex created
+cnat.kubernetes.sh/example-at created
 
 $ kubectl get at
 NAME               AGE
-simplex            20s
+example-at         20s
 ```
 
 Note that the execution time (`schedule`) is given in [UTC](https://www.utctime.net/).
