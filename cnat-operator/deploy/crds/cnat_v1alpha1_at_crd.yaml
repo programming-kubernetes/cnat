@@ -23,6 +23,8 @@ spec:
           type: object
         spec:
           properties:
+            command:
+              type: string
             schedule:
               type: string
           type: object

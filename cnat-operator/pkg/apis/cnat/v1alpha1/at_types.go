@@ -16,7 +16,8 @@ type AtSpec struct {
 	// Schedule is the desired time the command is supposed to be executed.
 	// Note: the format used here is UTC time https://www.utctime.net
 	Schedule string `json:"schedule,omitempty"`
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	// Command is the desired command (executed in a Bash shell) to be executed.
+	Command string `json:"command,omitempty"`
 }
 
 // AtStatus defines the observed state of At
@@ -25,7 +26,6 @@ type AtStatus struct {
 	// Phase represents the state of the schedule: until the command is executed
 	// it is PENDING, afterwards it is DONE.
 	Phase string `json:"phase,omitempty"`
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

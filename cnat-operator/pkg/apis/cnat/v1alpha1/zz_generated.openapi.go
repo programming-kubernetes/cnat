@@ -75,6 +75,13 @@ func schema_pkg_apis_cnat_v1alpha1_AtSpec(ref common.ReferenceCallback) common.O
 							Format:      "",
 						},
 					},
+					"command": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Command is the desired command (executed in a Bash shell) to be executed.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
