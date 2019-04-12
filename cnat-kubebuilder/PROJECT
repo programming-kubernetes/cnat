@@ -1,0 +1,3 @@
+version: "1"
+domain: kubernetes.sh
+repo: github.com/programming-kubernetes/cnat/cnat-kubebuilder
