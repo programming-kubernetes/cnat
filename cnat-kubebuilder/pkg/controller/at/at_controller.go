@@ -18,7 +18,9 @@ package at
 
 import (
 	"context"
-	"reflect"
+	"fmt"
+	"strings"
+	"time"
 
 	cnatv1alpha1 "github.com/programming-kubernetes/cnat/cnat-kubebuilder/pkg/apis/cnat/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -92,76 +94,140 @@ type ReconcileAt struct {
 
 // Reconcile reads that state of the cluster for a At object and makes changes based on the state read
 // and what is in the At.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
-// a Deployment as an example
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cnat.kubernetes.sh,resources=ats,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cnat.kubernetes.sh,resources=ats/status,verbs=get;update;patch
 func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	reqLogger := log.WithValues("namespace", request.Namespace, "at", request.Name)
+	reqLogger.Info("=== Reconciling At")
 	// Fetch the At instance
 	instance := &cnatv1alpha1.At{}
 	err := r.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Object not found, return.  Created objects are automatically garbage collected.
-			// For additional cleanup logic use finalizers.
+			// Request object not found, could have been deleted after reconcile request - return and don't requeue:
 			return reconcile.Result{}, nil
 		}
-		// Error reading the object - requeue the request.
+		// Error reading the object - requeue the request:
 		return reconcile.Result{}, err
 	}
 
-	// TODO(user): Change this to be the object type created by your controller
-	// Define the desired Deployment object
-	deploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      instance.Name + "-deployment",
-			Namespace: instance.Namespace,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"deployment": instance.Name + "-deployment"},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"deployment": instance.Name + "-deployment"}},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx",
-						},
-					},
-				},
-			},
-		},
-	}
-	if err := controllerutil.SetControllerReference(instance, deploy, r.scheme); err != nil {
-		return reconcile.Result{}, err
+	// If no phase set, default to pending (the initial phase):
+	if instance.Status.Phase == "" {
+		instance.Status.Phase = cnatv1alpha1.PhasePending
 	}
 
-	// TODO(user): Change this for the object type created by your controller
-	// Check if the Deployment already exists
-	found := &appsv1.Deployment{}
-	err = r.Get(context.TODO(), types.NamespacedName{Name: deploy.Name, Namespace: deploy.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		log.Info("Creating Deployment", "namespace", deploy.Namespace, "name", deploy.Name)
-		err = r.Create(context.TODO(), deploy)
-		return reconcile.Result{}, err
-	} else if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// TODO(user): Change this for the object type created by your controller
-	// Update the found object and write the result back if there are any changes
-	if !reflect.DeepEqual(deploy.Spec, found.Spec) {
-		found.Spec = deploy.Spec
-		log.Info("Updating Deployment", "namespace", deploy.Namespace, "name", deploy.Name)
-		err = r.Update(context.TODO(), found)
+	// Now let's make the main case distinction: implementing
+	// the state diagram PENDING -> RUNNING -> DONE
+	switch instance.Status.Phase {
+	case cnatv1alpha1.PhasePending:
+		reqLogger.Info("Phase: PENDING")
+		// As long as we haven't executed the command yet,
+		// we need to check if it's time already to act:
+		reqLogger.Info("Checking schedule", "Target", instance.Spec.Schedule)
+		// Check if it's already time to execute the command with a tolerance of 2 seconds:
+		timetolaunch, cmresult, err := ready2Launch(instance.Spec.Schedule, 2*time.Second)
 		if err != nil {
+			reqLogger.Error(err, "Schedule parsing failure")
+			// Error reading the schedule - requeue the request:
 			return reconcile.Result{}, err
 		}
+		reqLogger.Info("Schedule parsing done", "Result", cmresult)
+		if timetolaunch {
+			reqLogger.Info("It's time!", "Ready to execute", instance.Spec.Command)
+			instance.Status.Phase = cnatv1alpha1.PhaseRunning
+		} else {
+			// Not yet time to execute the command - requeue to try again in 10 seconds:
+			return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+		}
+	case cnatv1alpha1.PhaseRunning:
+		reqLogger.Info("Phase: RUNNING")
+		pod := newPodForCR(instance)
+		// Set At instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		found := &corev1.Pod{}
+		err = r.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		// Try to see if the pod already exists and if not
+		// (which we expect) then create a one-shot pod as per spec:
+		if err != nil && errors.IsNotFound(err) {
+			err = r.Create(context.TODO(), pod)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			reqLogger.Info("Pod launched", "name", pod.Name)
+			instance.Status.Phase = cnatv1alpha1.PhaseDone
+		}
+	case cnatv1alpha1.PhaseDone:
+		reqLogger.Info("Phase: DONE")
+		pod := newPodForCR(instance)
+		found := &corev1.Pod{}
+		err = r.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		if err != nil {
+			reqLogger.Error(err, "Finding pod failure")
+		}
+		if found.Status.Phase == corev1.PodRunning {
+			// reqLogger.Info("Pod running", "name", found.Name, "Pod.Phase", found.Status.Phase)
+			maincontainerstate := found.Status.ContainerStatuses[0].State
+			if maincontainerstate.Terminated != nil {
+				reqLogger.Info("Main container terminated", "Reason", maincontainerstate.Terminated.Reason)
+			}
+		}
+	default:
+		reqLogger.Info("NOP")
 	}
-	return reconcile.Result{}, nil
+
+	// Update the At instance, setting the status to the respective phase:
+	err = r.Update(context.TODO(), instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// Requeue to try again in 10 seconds:
+	return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+}
+
+// newPodForCR returns a busybox pod with the same name/namespace as the cr
+func newPodForCR(cr *cnatv1alpha1.At) *corev1.Pod {
+	labels := map[string]string{
+		"app": cr.Name,
+	}
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name + "-pod",
+			Namespace: cr.Namespace,
+			Labels:    labels,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:    "busybox",
+					Image:   "busybox",
+					Command: strings.Split(cr.Spec.Command, " "),
+				},
+			},
+			RestartPolicy: corev1.RestartPolicyOnFailure,
+		},
+	}
+}
+
+// ready2Launch return true IFF the schedule is within tolerance, for example:
+// if the schedule is 2019-04-11T10:10:00Z and it's now 2019-04-11T10:10:02Z
+// and the tolerance provided is 5 seconds, then this function returns true.
+func ready2Launch(schedule string, tolerance time.Duration) (bool, string, error) {
+	now := time.Now().UTC()
+	layout := "2006-01-02T15:04:05Z"
+	s, err := time.Parse(layout, schedule)
+	if err != nil {
+		return false, "", err
+	}
+	diff := s.Sub(now)
+	cmpresult := fmt.Sprintf("%v with a diff of %v to %v", s, diff, now)
+	if time.Until(s) < time.Duration(tolerance) {
+		return true, cmpresult, nil
+	}
+	return false, cmpresult, nil
 }

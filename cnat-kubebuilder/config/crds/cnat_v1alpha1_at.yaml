@@ -27,8 +27,22 @@ spec:
         metadata:
           type: object
         spec:
+          properties:
+            command:
+              description: Command is the desired command (executed in a Bash shell)
+                to be executed.
+              type: string
+            schedule:
+              description: 'Schedule is the desired time the command is supposed to
+                be executed. Note: the format used here is UTC time https://www.utctime.net'
+              type: string
           type: object
         status:
+          properties:
+            phase:
+              description: 'Phase represents the state of the schedule: until the
+                command is executed it is PENDING, afterwards it is DONE.'
+              type: string
           type: object
   version: v1alpha1
 status:
