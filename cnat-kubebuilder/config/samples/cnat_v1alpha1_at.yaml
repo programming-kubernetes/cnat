@@ -1,0 +1,9 @@
+apiVersion: cnat.kubernetes.sh/v1alpha1
+kind: At
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: at-sample
+spec:
+  # Add fields here
+  foo: bar
