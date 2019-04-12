@@ -77,7 +77,7 @@ type ReconcileAt struct {
 // and what is in the At.Spec
 func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("namespace", request.Namespace, "at", request.Name)
-	reqLogger.Info("Reconciling At")
+	reqLogger.Info("=== Reconciling At")
 	// Fetch the At instance
 	instance := &cnatv1alpha1.At{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
@@ -90,14 +90,33 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, err
 	}
 
-	// If no phase set, default to pending:
+	// If no phase set, default to pending (the initial phase):
 	if instance.Status.Phase == "" {
 		instance.Status.Phase = cnatv1alpha1.PhasePending
 	}
 
+	// Now let's make the main case distinction: implementing
+	// the state diagram PENDING -> RUNNING -> DONE
 	switch instance.Status.Phase {
+	case cnatv1alpha1.PhasePending:
+		reqLogger.Info("Phase: PENDING")
+		// As long as we haven't executed the command yet,
+		// we need to check if it's time already to act:
+		reqLogger.Info("Checking schedule", "Target", instance.Spec.Schedule)
+		// Check if it's already time to execute the command with a tolerance of 2 seconds:
+		timetolaunch, cmresult, err := ready2Launch(instance.Spec.Schedule, 2*time.Second)
+		if err != nil {
+			reqLogger.Error(err, "Schedule parsing failure")
+			// Error reading the schedule - requeue the request:
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Schedule parsing done", "Result", cmresult)
+		if timetolaunch {
+			reqLogger.Info("It's time!", "Ready to execute", instance.Spec.Command)
+			instance.Status.Phase = cnatv1alpha1.PhaseRunning
+		}
 	case cnatv1alpha1.PhaseRunning:
-		// Define a new Pod object
+		reqLogger.Info("Phase: RUNNING")
 		pod := newPodForCR(instance)
 		// Set At instance as the owner and controller
 		if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
@@ -105,54 +124,40 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 		}
 		found := &corev1.Pod{}
 		err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		// Try to see if the pod already exists and if not
+		// (which we expect) then create a one-shot pod as per spec:
 		if err != nil && errors.IsNotFound(err) {
 			err = r.client.Create(context.TODO(), pod)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+			reqLogger.Info("Pod launched", "name", pod.Name)
 			instance.Status.Phase = cnatv1alpha1.PhaseDone
 		}
 	case cnatv1alpha1.PhaseDone:
-		// Define a new Pod object
+		reqLogger.Info("Phase: DONE")
 		pod := newPodForCR(instance)
 		found := &corev1.Pod{}
 		err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 		if err != nil {
-			// NOP
+			reqLogger.Error(err, "Finding pod failure")
 		}
 		if found.Status.Phase == corev1.PodRunning {
-			reqLogger.Info("Pod running", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name, "Pod.Phase", found.Status.Phase)
+			// reqLogger.Info("Pod running", "name", found.Name, "Pod.Phase", found.Status.Phase)
 			maincontainerstate := found.Status.ContainerStatuses[0].State
 			if maincontainerstate.Terminated != nil {
 				reqLogger.Info("Main container terminated", "Reason", maincontainerstate.Terminated.Reason)
 			}
 		}
-	case cnatv1alpha1.PhasePending:
 	default:
 	}
 
-	// As long as we haven't executed the command we're in PENDING phase
-	// and need to check if it's time already to act:
-	if instance.Status.Phase == cnatv1alpha1.PhasePending {
-		reqLogger.Info("Checking schedule", "Target", instance.Spec.Schedule)
-		// Check if it's already time to execute the command with a tolerance of 2 seconds:
-		timetolaunch, cmresult, err := ready2Launch(instance.Spec.Schedule, 2*time.Second)
-		if err != nil {
-			reqLogger.Info("Schedule parsing failure", "Reason", err)
-			// Error reading the schedule - requeue the request:
-			return reconcile.Result{}, err
-		}
-		reqLogger.Info("Schedule parsing done", "Result", cmresult)
-		if timetolaunch {
-			reqLogger.Info("It's time!", "Ready to execute", "COMMAND HERE")
-			instance.Status.Phase = cnatv1alpha1.PhaseRunning
-		}
-	}
-
 	// Update the At instance, setting the status to the respective phase:
-	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+	err = r.client.Status().Update(context.TODO(), instance)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
+
 	// Not yet time to execute the command - requeue to try again in 10 seconds:
 	return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 }
