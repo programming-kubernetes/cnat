@@ -3,5 +3,5 @@ kind: At
 metadata:
   name: example-at
 spec:
-  schedule: "2019-04-11T14:56:30Z"
+  schedule: "2019-04-12T03:59:30Z"
   command: "echo YAY"

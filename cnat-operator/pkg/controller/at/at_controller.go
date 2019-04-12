@@ -176,6 +176,7 @@ func newPodForCR(cr *cnatv1alpha1.At) *corev1.Pod {
 					Command: strings.Split(cr.Spec.Command, " "),
 				},
 			},
+			RestartPolicy: corev1.RestartPolicyOnFailure,
 		},
 	}
 }
