@@ -17,9 +17,9 @@ $ operator-sdk add controller \
 ## Launch operator locally
 
 ```bash
-$ kubectl create ns cnat
+$ kubectl apply -f deploy/crds/cnat_v1alpha1_at_crd.yaml
 
-$ kubectl -n cnat apply -f deploy/crds/cnat_v1alpha1_at_crd.yaml
+$ kubectl create ns cnat
 
 $ OPERATOR_NAME=cnatop operator-sdk up local --namespace "cnat"
 ```

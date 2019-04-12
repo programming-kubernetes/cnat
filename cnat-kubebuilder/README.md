@@ -24,24 +24,28 @@ y
 ## Launch operator locally
 
 ```bash
-$ kubectl create ns cnat
+# install CRD via:
+$ make install
 
-$ kubectl -n cnat apply -f deploy/crds/cnat_v1alpha1_at_crd.yaml
+# create the dedicated namespace and set the context to it:
+$ kubectl create ns cnat && \
+  kubectl config set-context $(kubectl config current-context) --namespace=cnat
 
-$ OPERATOR_NAME=cnatop operator-sdk up local --namespace "cnat"
+# launch operator:
+$ make run
 ```
 
 Now, once we create the `At` custom resource, we see the execution at the scheduled time:
 
 ```bash
-$ kubectl -n cnat apply -f deploy/crds/cnat_v1alpha1_at_cr.yaml
+$ kubectl apply -f config/samples/cnat_v1alpha1_at.yaml
 
 $ kubectl -n cnat  get at,po
 NAME                               AGE
 at.cnat.kubernetes.sh/example-at   54s
 
-NAME                 READY   STATUS             RESTARTS   AGE
-pod/example-at-pod   0/1     CrashLoopBackOff   2          34s
+NAME                 READY   STATUS        RESTARTS   AGE
+pod/example-at-pod   0/1     Completed     2          56s
 ```
 
 ## Implement business logic
