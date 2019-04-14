@@ -19,6 +19,8 @@ $ go build -o cnat-controller .
 
 $ ./cnat-controller -kubeconfig=$HOME/.kube/config
 
+$ ./hack/update-codegen.sh
+
 $ kubectl apply -f artifacts/examples/crd.yaml
 
 $ kubectl apply -f artifacts/examples/example-foo.yaml
