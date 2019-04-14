@@ -47,7 +47,7 @@ rules:
   verbs:
   - update
 - apiGroups:
-  - cnat.kubernetes.sh
+  - cnat.programming-kubernetes.info
   resources:
   - '*'
   verbs:

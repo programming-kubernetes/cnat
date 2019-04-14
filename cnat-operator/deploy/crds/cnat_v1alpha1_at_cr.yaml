@@ -1,4 +1,4 @@
-apiVersion: cnat.kubernetes.sh/v1alpha1
+apiVersion: cnat.programming-kubernetes.info/v1alpha1
 kind: At
 metadata:
   name: example-at

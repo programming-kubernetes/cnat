@@ -6,11 +6,11 @@ Install the [Operator SDK](https://github.com/operator-framework/operator-sdk#pr
 $ operator-sdk new cnat-operator && cd cnat-operator
 
 $ operator-sdk add api \
-               --api-version=cnat.kubernetes.sh/v1alpha1 \
+               --api-version=cnat.programming-kubernetes.info/v1alpha1 \
                --kind=At
 
 $ operator-sdk add controller \
-               --api-version=cnat.kubernetes.sh/v1alpha1 \
+               --api-version=cnat.programming-kubernetes.info/v1alpha1 \
                --kind=At  
 ```
 
@@ -31,7 +31,7 @@ $ kubectl -n cnat apply -f deploy/crds/cnat_v1alpha1_at_cr.yaml
 
 $ kubectl -n cnat  get at,po
 NAME                               AGE
-at.cnat.kubernetes.sh/example-at   54s
+at.cnat.programming-kubernetes.info/example-at   54s
 
 NAME                 READY   STATUS             RESTARTS   AGE
 pod/example-at-pod   0/1     CrashLoopBackOff   2          34s

@@ -2,7 +2,7 @@
 
 // Package v1alpha1 contains API Schema definitions for the cnat v1alpha1 API group
 // +k8s:deepcopy-gen=package,register
-// +groupName=cnat.kubernetes.sh
+// +groupName=cnat.programming-kubernetes.info
 package v1alpha1
 
 import (
@@ -12,7 +12,7 @@ import (
 
 var (
 	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: "cnat.kubernetes.sh", Version: "v1alpha1"}
+	SchemeGroupVersion = schema.GroupVersion{Group: "cnat.programming-kubernetes.info", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
