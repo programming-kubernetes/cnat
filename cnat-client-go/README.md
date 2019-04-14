@@ -15,13 +15,18 @@ controller based off of this implementation you should not copy these files and
 instead run the `update-codegen` script to generate your own.
 
 ```bash
+# build custom controller binary:
 $ go build -o cnat-controller .
 
+# launch custom controller locally:
 $ ./cnat-controller -kubeconfig=$HOME/.kube/config
 
+# after API/CRD changes:
 $ ./hack/update-codegen.sh
 
-$ kubectl apply -f artifacts/examples/crd.yaml
+# register At custom resource definition:
+$ kubectl apply -f artifacts/examples/cnat-crd.yaml
 
-$ kubectl apply -f artifacts/examples/example-foo.yaml
+# create an At custom resource:
+$ kubectl apply -f artifacts/examples/cnat-example.yaml
 ```
