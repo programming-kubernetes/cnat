@@ -5,8 +5,7 @@ along with the [client-go library](https://github.com/kubernetes/client-go/tree/
 
 It makes use of the generators in [k8s.io/code-generator](https://github.com/kubernetes/code-generator) to generate a typed client, informers, listers and deep-copy functions. You can do this yourself using the `./hack/update-codegen.sh` script.
 
-The `update-codegen` script will automatically generate the following files &
-directories:
+The `update-codegen` script will automatically generate the following:
 
 * `pkg/apis/samplecontroller/v1alpha1/zz_generated.deepcopy.go`
 * `pkg/generated/`
