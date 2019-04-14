@@ -6,7 +6,7 @@ Let's say you want to execute `echo YAY` at 2am on 3rd July 2019. Here's what yo
 
 ```bash
 $ cat runat.yaml
-apiVersion: cnat.kubernetes.sh/v1alpha1
+apiVersion: cnat.programming-kubernetes.info/v1alpha1
 kind: At
 metadata:
   name: example-at
@@ -16,7 +16,7 @@ spec:
 
 
 $ kubectl apply -f runat.yaml
-cnat.kubernetes.sh/example-at created
+cnat.programming-kubernetes.info/example-at created
 
 $ kubectl get at
 NAME               AGE
