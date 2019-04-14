@@ -1,11 +1,11 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: foos.samplecontroller.k8s.io
+  name: ats.cnat.programming-kubernetes.info
 spec:
-  group: samplecontroller.k8s.io
+  group: cnat.programming-kubernetes.info
   version: v1alpha1
   names:
-    kind: Foo
-    plural: foos
+    kind: At
+    plural: ats
   scope: Namespaced
