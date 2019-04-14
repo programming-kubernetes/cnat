@@ -114,6 +114,9 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 		if timetolaunch {
 			reqLogger.Info("It's time!", "Ready to execute", instance.Spec.Command)
 			instance.Status.Phase = cnatv1alpha1.PhaseRunning
+		} else {
+			// Not yet time to execute the command - requeue to try again in 10 seconds:
+			return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 		}
 	case cnatv1alpha1.PhaseRunning:
 		reqLogger.Info("Phase: RUNNING")
@@ -153,7 +156,7 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 	}
 
 	// Update the At instance, setting the status to the respective phase:
-	err = r.client.Status().Update(context.TODO(), instance)
+	err = r.client.Update(context.TODO(), instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
