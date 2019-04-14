@@ -156,7 +156,7 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 	}
 
 	// Update the At instance, setting the status to the respective phase:
-	err = r.client.Update(context.TODO(), instance)
+	err = r.client.Status().Update(context.TODO(), instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
