@@ -25,7 +25,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - cnat.kubernetes.sh
+  - cnat.programming-kubernetes.info
   resources:
   - ats
   verbs:
@@ -37,7 +37,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - cnat.kubernetes.sh
+  - cnat.programming-kubernetes.info
   resources:
   - ats/status
   verbs:

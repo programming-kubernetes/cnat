@@ -6,7 +6,7 @@ Install [Kubebuilder](https://book.kubebuilder.io/quick_start.html) and then boo
 $ mkdir cnat-kubebuilder && cd $_
 
 $ kubebuilder init \
-              --domain kubernetes.sh \
+              --domain programming-kubernetes.info \
               --license apache2 \
               --owner "We, the Kube people"
 
@@ -42,10 +42,10 @@ $ kubectl apply -f config/samples/cnat_v1alpha1_at.yaml
 
 $ kubectl -n cnat  get at,po
 NAME                               AGE
-at.cnat.kubernetes.sh/example-at   54s
+at.cnat.programming-kubernetes.info/example-at   54s
 
 NAME                 READY   STATUS        RESTARTS   AGE
-pod/example-at-pod   0/1     Completed     2          56s
+pod/example-at-pod   0/1     Completed     0          32s
 ```
 
 ## Implement business logic

@@ -4,9 +4,9 @@ metadata:
   creationTimestamp: null
   labels:
     controller-tools.k8s.io: "1.0"
-  name: ats.cnat.kubernetes.sh
+  name: ats.cnat.programming-kubernetes.info
 spec:
-  group: cnat.kubernetes.sh
+  group: cnat.programming-kubernetes.info
   names:
     kind: At
     plural: ats

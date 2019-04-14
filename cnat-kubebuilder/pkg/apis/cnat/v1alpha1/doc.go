@@ -19,5 +19,5 @@ limitations under the License.
 // +k8s:deepcopy-gen=package,register
 // +k8s:conversion-gen=github.com/programming-kubernetes/cnat/cnat-kubebuilder/pkg/apis/cnat
 // +k8s:defaulter-gen=TypeMeta
-// +groupName=cnat.kubernetes.sh
+// +groupName=cnat.programming-kubernetes.info
 package v1alpha1

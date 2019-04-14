@@ -21,7 +21,7 @@ limitations under the License.
 // +k8s:deepcopy-gen=package,register
 // +k8s:conversion-gen=github.com/programming-kubernetes/cnat/cnat-kubebuilder/pkg/apis/cnat
 // +k8s:defaulter-gen=TypeMeta
-// +groupName=cnat.kubernetes.sh
+// +groupName=cnat.programming-kubernetes.info
 package v1alpha1
 
 import (
@@ -31,7 +31,7 @@ import (
 
 var (
 	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: "cnat.kubernetes.sh", Version: "v1alpha1"}
+	SchemeGroupVersion = schema.GroupVersion{Group: "cnat.programming-kubernetes.info", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
