@@ -104,20 +104,20 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 		// we need to check if it's time already to act:
 		reqLogger.Info("Checking schedule", "Target", instance.Spec.Schedule)
 		// Check if it's already time to execute the command with a tolerance of 2 seconds:
-		timetolaunch, cmresult, err := ready2Launch(instance.Spec.Schedule, 2*time.Second)
+		d, err := timeUntilSchedule(instance.Spec.Schedule)
 		if err != nil {
 			reqLogger.Error(err, "Schedule parsing failure")
 			// Error reading the schedule - requeue the request:
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Schedule parsing done", "Result", cmresult)
-		if timetolaunch {
-			reqLogger.Info("It's time!", "Ready to execute", instance.Spec.Command)
-			instance.Status.Phase = cnatv1alpha1.PhaseRunning
-		} else {
-			// Not yet time to execute the command - requeue to try again in 10 seconds:
-			return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+		reqLogger.Info("Schedule parsing done", "Result", "diff", fmt.Sprintf("%v", d))
+		if d > 0 {
+			// Not yet time to execute the command, wait until the scheduled time
+			return reconcile.Result{RequeueAfter: d}, nil
 		}
+
+		reqLogger.Info("It's time!", "Ready to execute", instance.Spec.Command)
+		instance.Status.Phase = cnatv1alpha1.PhaseRunning
 	case cnatv1alpha1.PhaseRunning:
 		reqLogger.Info("Phase: RUNNING")
 		pod := newPodForCR(instance)
@@ -136,23 +136,22 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 			}
 			reqLogger.Info("Pod launched", "name", pod.Name)
 			instance.Status.Phase = cnatv1alpha1.PhaseDone
+		} else if err != nil {
+			// requeue with error
+			return reconcile.Result{}, err
 		}
+		if found.Status.Phase != corev1.PodFailed && found.Status.Phase != corev1.PodSucceeded {
+			// don't requeue because it will happen automatically when the pod status changes
+			return reconcile.Result{}, nil
+		}
+		reqLogger.Info("Container terminated", "reason", found.Status.Reason, "message", found.Status.Message)
+		instance.Status.Phase = cnatv1alpha1.PhaseDone
 	case cnatv1alpha1.PhaseDone:
 		reqLogger.Info("Phase: DONE")
-		pod := newPodForCR(instance)
-		found := &corev1.Pod{}
-		err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-		if err != nil {
-			reqLogger.Error(err, "Finding pod failure")
-		}
-		if found.Status.Phase == corev1.PodRunning {
-			// reqLogger.Info("Pod running", "name", found.Name, "Pod.Phase", found.Status.Phase)
-			maincontainerstate := found.Status.ContainerStatuses[0].State
-			if maincontainerstate.Terminated != nil {
-				reqLogger.Info("Main container terminated", "Reason", maincontainerstate.Terminated.Reason)
-			}
-		}
+		return reconcile.Result{}, nil
 	default:
+		reqLogger.Info("NOP")
+		return reconcile.Result{}, nil
 	}
 
 	// Update the At instance, setting the status to the respective phase:
@@ -161,8 +160,8 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, err
 	}
 
-	// Not yet time to execute the command - requeue to try again in 10 seconds:
-	return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	// Don't requeue. We should be reconcile because either the pod or the CR changes.
+	return reconcile.Result{}, nil
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
@@ -189,20 +188,14 @@ func newPodForCR(cr *cnatv1alpha1.At) *corev1.Pod {
 	}
 }
 
-// ready2Launch return true IFF the schedule is within tolerance, for example:
-// if the schedule is 2019-04-11T10:10:00Z and it's now 2019-04-11T10:10:02Z
-// and the tolerance provided is 5 seconds, then this function returns true.
-func ready2Launch(schedule string, tolerance time.Duration) (bool, string, error) {
+// timeUntilSchedule parses the schedule string and returns the time until the schedule.
+// When it is overdue, the duration is negative.
+func timeUntilSchedule(schedule string) (time.Duration, error) {
 	now := time.Now().UTC()
 	layout := "2006-01-02T15:04:05Z"
 	s, err := time.Parse(layout, schedule)
 	if err != nil {
-		return false, "", err
+		return time.Duration(0), err
 	}
-	diff := s.Sub(now)
-	cmpresult := fmt.Sprintf("%v with a diff of %v to %v", s, diff, now)
-	if time.Until(s) < time.Duration(tolerance) {
-		return true, cmpresult, nil
-	}
-	return false, cmpresult, nil
+	return s.Sub(now), nil
 }
