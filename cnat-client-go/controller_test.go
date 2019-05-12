@@ -91,7 +91,7 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory,
 	c := NewController(f.kubeclient, f.client,
 		k8sI.Apps().V1().Deployments(), i.Samplecontroller().V1alpha1().Foos())
 
-	c.foosSynced = alwaysReady
+	c.atsSynced = alwaysReady
 	c.deploymentsSynced = alwaysReady
 	c.recorder = &record.FakeRecorder{}
 

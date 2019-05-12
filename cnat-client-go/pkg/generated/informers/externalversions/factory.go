@@ -23,13 +23,13 @@ import (
 	sync "sync"
 	time "time"
 
+	versioned "github.com/programming-kubernetes/cnat/cnat-client-go/pkg/generated/clientset/versioned"
+	cnat "github.com/programming-kubernetes/cnat/cnat-client-go/pkg/generated/informers/externalversions/cnat"
+	internalinterfaces "github.com/programming-kubernetes/cnat/cnat-client-go/pkg/generated/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	versioned "k8s.io/sample-controller/pkg/generated/clientset/versioned"
-	internalinterfaces "k8s.io/sample-controller/pkg/generated/informers/externalversions/internalinterfaces"
-	samplecontroller "k8s.io/sample-controller/pkg/generated/informers/externalversions/samplecontroller"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.
@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Samplecontroller() samplecontroller.Interface
+	Cnat() cnat.Interface
 }
 
-func (f *sharedInformerFactory) Samplecontroller() samplecontroller.Interface {
-	return samplecontroller.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Cnat() cnat.Interface {
+	return cnat.New(f, f.namespace, f.tweakListOptions)
 }

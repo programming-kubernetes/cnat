@@ -19,27 +19,27 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1alpha1 "github.com/programming-kubernetes/cnat/cnat-client-go/pkg/apis/cnat/v1alpha1"
+	"github.com/programming-kubernetes/cnat/cnat-client-go/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "k8s.io/sample-controller/pkg/apis/samplecontroller/v1alpha1"
-	"k8s.io/sample-controller/pkg/generated/clientset/versioned/scheme"
 )
 
-type SamplecontrollerV1alpha1Interface interface {
+type CnatV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	FoosGetter
+	AtsGetter
 }
 
-// SamplecontrollerV1alpha1Client is used to interact with features provided by the samplecontroller.k8s.io group.
-type SamplecontrollerV1alpha1Client struct {
+// CnatV1alpha1Client is used to interact with features provided by the cnat.programming-kubernetes.info group.
+type CnatV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *SamplecontrollerV1alpha1Client) Foos(namespace string) FooInterface {
-	return newFoos(c, namespace)
+func (c *CnatV1alpha1Client) Ats(namespace string) AtInterface {
+	return newAts(c, namespace)
 }
 
-// NewForConfig creates a new SamplecontrollerV1alpha1Client for the given config.
-func NewForConfig(c *rest.Config) (*SamplecontrollerV1alpha1Client, error) {
+// NewForConfig creates a new CnatV1alpha1Client for the given config.
+func NewForConfig(c *rest.Config) (*CnatV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -48,12 +48,12 @@ func NewForConfig(c *rest.Config) (*SamplecontrollerV1alpha1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &SamplecontrollerV1alpha1Client{client}, nil
+	return &CnatV1alpha1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new SamplecontrollerV1alpha1Client for the given config and
+// NewForConfigOrDie creates a new CnatV1alpha1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *SamplecontrollerV1alpha1Client {
+func NewForConfigOrDie(c *rest.Config) *CnatV1alpha1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -61,9 +61,9 @@ func NewForConfigOrDie(c *rest.Config) *SamplecontrollerV1alpha1Client {
 	return client
 }
 
-// New creates a new SamplecontrollerV1alpha1Client for the given RESTClient.
-func New(c rest.Interface) *SamplecontrollerV1alpha1Client {
-	return &SamplecontrollerV1alpha1Client{c}
+// New creates a new CnatV1alpha1Client for the given RESTClient.
+func New(c rest.Interface) *CnatV1alpha1Client {
+	return &CnatV1alpha1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -81,7 +81,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *SamplecontrollerV1alpha1Client) RESTClient() rest.Interface {
+func (c *CnatV1alpha1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

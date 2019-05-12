@@ -1,7 +1,7 @@
 # Development
 
-Using the [sample-controller](https://github.com/kubernetes/sample-controller)
-along with the [client-go library](https://github.com/kubernetes/client-go/tree/master/tools/cache).
+We follow the [sample-controller](https://github.com/kubernetes/sample-controller)
+along with the [client-go library](https://github.com/kubernetes/client-go).
 
 It makes use of the generators in [k8s.io/code-generator](https://github.com/kubernetes/code-generator) to generate a typed client, informers, listers and deep-copy functions. You can do this yourself using the `./hack/update-codegen.sh` script.
 

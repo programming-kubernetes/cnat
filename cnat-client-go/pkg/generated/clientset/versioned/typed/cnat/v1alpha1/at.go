@@ -21,54 +21,54 @@ package v1alpha1
 import (
 	"time"
 
+	v1alpha1 "github.com/programming-kubernetes/cnat/cnat-client-go/pkg/apis/cnat/v1alpha1"
+	scheme "github.com/programming-kubernetes/cnat/cnat-client-go/pkg/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "k8s.io/sample-controller/pkg/apis/samplecontroller/v1alpha1"
-	scheme "k8s.io/sample-controller/pkg/generated/clientset/versioned/scheme"
 )
 
-// FoosGetter has a method to return a FooInterface.
+// AtsGetter has a method to return a AtInterface.
 // A group's client should implement this interface.
-type FoosGetter interface {
-	Foos(namespace string) FooInterface
+type AtsGetter interface {
+	Ats(namespace string) AtInterface
 }
 
-// FooInterface has methods to work with Foo resources.
-type FooInterface interface {
-	Create(*v1alpha1.Foo) (*v1alpha1.Foo, error)
-	Update(*v1alpha1.Foo) (*v1alpha1.Foo, error)
-	UpdateStatus(*v1alpha1.Foo) (*v1alpha1.Foo, error)
+// AtInterface has methods to work with At resources.
+type AtInterface interface {
+	Create(*v1alpha1.At) (*v1alpha1.At, error)
+	Update(*v1alpha1.At) (*v1alpha1.At, error)
+	UpdateStatus(*v1alpha1.At) (*v1alpha1.At, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.Foo, error)
-	List(opts v1.ListOptions) (*v1alpha1.FooList, error)
+	Get(name string, options v1.GetOptions) (*v1alpha1.At, error)
+	List(opts v1.ListOptions) (*v1alpha1.AtList, error)
 	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Foo, err error)
-	FooExpansion
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.At, err error)
+	AtExpansion
 }
 
-// foos implements FooInterface
-type foos struct {
+// ats implements AtInterface
+type ats struct {
 	client rest.Interface
 	ns     string
 }
 
-// newFoos returns a Foos
-func newFoos(c *SamplecontrollerV1alpha1Client, namespace string) *foos {
-	return &foos{
+// newAts returns a Ats
+func newAts(c *CnatV1alpha1Client, namespace string) *ats {
+	return &ats{
 		client: c.RESTClient(),
 		ns:     namespace,
 	}
 }
 
-// Get takes name of the foo, and returns the corresponding foo object, and an error if there is any.
-func (c *foos) Get(name string, options v1.GetOptions) (result *v1alpha1.Foo, err error) {
-	result = &v1alpha1.Foo{}
+// Get takes name of the at, and returns the corresponding at object, and an error if there is any.
+func (c *ats) Get(name string, options v1.GetOptions) (result *v1alpha1.At, err error) {
+	result = &v1alpha1.At{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("foos").
+		Resource("ats").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
 		Do().
@@ -76,16 +76,16 @@ func (c *foos) Get(name string, options v1.GetOptions) (result *v1alpha1.Foo, er
 	return
 }
 
-// List takes label and field selectors, and returns the list of Foos that match those selectors.
-func (c *foos) List(opts v1.ListOptions) (result *v1alpha1.FooList, err error) {
+// List takes label and field selectors, and returns the list of Ats that match those selectors.
+func (c *ats) List(opts v1.ListOptions) (result *v1alpha1.AtList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
 	}
-	result = &v1alpha1.FooList{}
+	result = &v1alpha1.AtList{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("foos").
+		Resource("ats").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Do().
@@ -93,8 +93,8 @@ func (c *foos) List(opts v1.ListOptions) (result *v1alpha1.FooList, err error) {
 	return
 }
 
-// Watch returns a watch.Interface that watches the requested foos.
-func (c *foos) Watch(opts v1.ListOptions) (watch.Interface, error) {
+// Watch returns a watch.Interface that watches the requested ats.
+func (c *ats) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -102,32 +102,32 @@ func (c *foos) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
-		Resource("foos").
+		Resource("ats").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Watch()
 }
 
-// Create takes the representation of a foo and creates it.  Returns the server's representation of the foo, and an error, if there is any.
-func (c *foos) Create(foo *v1alpha1.Foo) (result *v1alpha1.Foo, err error) {
-	result = &v1alpha1.Foo{}
+// Create takes the representation of a at and creates it.  Returns the server's representation of the at, and an error, if there is any.
+func (c *ats) Create(at *v1alpha1.At) (result *v1alpha1.At, err error) {
+	result = &v1alpha1.At{}
 	err = c.client.Post().
 		Namespace(c.ns).
-		Resource("foos").
-		Body(foo).
+		Resource("ats").
+		Body(at).
 		Do().
 		Into(result)
 	return
 }
 
-// Update takes the representation of a foo and updates it. Returns the server's representation of the foo, and an error, if there is any.
-func (c *foos) Update(foo *v1alpha1.Foo) (result *v1alpha1.Foo, err error) {
-	result = &v1alpha1.Foo{}
+// Update takes the representation of a at and updates it. Returns the server's representation of the at, and an error, if there is any.
+func (c *ats) Update(at *v1alpha1.At) (result *v1alpha1.At, err error) {
+	result = &v1alpha1.At{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("foos").
-		Name(foo.Name).
-		Body(foo).
+		Resource("ats").
+		Name(at.Name).
+		Body(at).
 		Do().
 		Into(result)
 	return
@@ -136,24 +136,24 @@ func (c *foos) Update(foo *v1alpha1.Foo) (result *v1alpha1.Foo, err error) {
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 
-func (c *foos) UpdateStatus(foo *v1alpha1.Foo) (result *v1alpha1.Foo, err error) {
-	result = &v1alpha1.Foo{}
+func (c *ats) UpdateStatus(at *v1alpha1.At) (result *v1alpha1.At, err error) {
+	result = &v1alpha1.At{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("foos").
-		Name(foo.Name).
+		Resource("ats").
+		Name(at.Name).
 		SubResource("status").
-		Body(foo).
+		Body(at).
 		Do().
 		Into(result)
 	return
 }
 
-// Delete takes name of the foo and deletes it. Returns an error if one occurs.
-func (c *foos) Delete(name string, options *v1.DeleteOptions) error {
+// Delete takes name of the at and deletes it. Returns an error if one occurs.
+func (c *ats) Delete(name string, options *v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("foos").
+		Resource("ats").
 		Name(name).
 		Body(options).
 		Do().
@@ -161,14 +161,14 @@ func (c *foos) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *foos) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *ats) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	var timeout time.Duration
 	if listOptions.TimeoutSeconds != nil {
 		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("foos").
+		Resource("ats").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(options).
@@ -176,12 +176,12 @@ func (c *foos) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOp
 		Error()
 }
 
-// Patch applies the patch and returns the patched foo.
-func (c *foos) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Foo, err error) {
-	result = &v1alpha1.Foo{}
+// Patch applies the patch and returns the patched at.
+func (c *ats) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.At, err error) {
+	result = &v1alpha1.At{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
-		Resource("foos").
+		Resource("ats").
 		SubResource(subresources...).
 		Name(name).
 		Body(data).
