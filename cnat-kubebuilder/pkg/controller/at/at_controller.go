@@ -22,8 +22,6 @@ import (
 	"strings"
 	"time"
 
-	cnatv1alpha1 "github.com/programming-kubernetes/cnat/cnat-kubebuilder/pkg/apis/cnat/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,6 +35,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	cnatv1alpha1 "github.com/programming-kubernetes/cnat/cnat-kubebuilder/pkg/apis/cnat/v1alpha1"
 )
 
 var log = logf.Log.WithName("controller")
@@ -72,7 +72,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch pods created by At
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &cnatv1alpha1.At{},
 	})
@@ -183,8 +183,8 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, err
 	}
 
-	// Requeue to try again in 10 seconds:
-	return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	// Don't requeue. We should be reconcile because either the pod or the CR changes.
+	return reconcile.Result{}, nil
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
