@@ -158,17 +158,16 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 				return reconcile.Result{}, err
 			}
 			reqLogger.Info("Pod launched", "name", pod.Name)
-			instance.Status.Phase = cnatv1alpha1.PhaseDone
 		} else if err != nil {
 			// requeue with error
 			return reconcile.Result{}, err
-		}
-		if found.Status.Phase != corev1.PodFailed && found.Status.Phase != corev1.PodSucceeded {
+		} else if found.Status.Phase == corev1.PodFailed || found.Status.Phase == corev1.PodSucceeded {
+			reqLogger.Info("Container terminated", "reason", found.Status.Reason, "message", found.Status.Message)
+			instance.Status.Phase = cnatv1alpha1.PhaseDone
+		} else {
 			// don't requeue because it will happen automatically when the pod status changes
 			return reconcile.Result{}, nil
 		}
-		reqLogger.Info("Container terminated", "reason", found.Status.Reason, "message", found.Status.Message)
-		instance.Status.Phase = cnatv1alpha1.PhaseDone
 	case cnatv1alpha1.PhaseDone:
 		reqLogger.Info("Phase: DONE")
 		return reconcile.Result{}, nil

@@ -33,7 +33,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileAt{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileAt{Client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -69,7 +69,7 @@ var _ reconcile.Reconciler = &ReconcileAt{}
 type ReconcileAt struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
+	client.Client
 	scheme *runtime.Scheme
 }
 
@@ -80,7 +80,7 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 	reqLogger.Info("=== Reconciling At")
 	// Fetch the At instance
 	instance := &cnatv1alpha1.At{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	err := r.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request - return and don't requeue:
@@ -100,14 +100,13 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 	switch instance.Status.Phase {
 	case cnatv1alpha1.PhasePending:
 		reqLogger.Info("Phase: PENDING")
-		// As long as we haven't executed the command yet,
-		// we need to check if it's time already to act:
+		// As long as we haven't executed the command yet, we need to check if it's time already to act:
 		reqLogger.Info("Checking schedule", "Target", instance.Spec.Schedule)
 		// Check if it's already time to execute the command with a tolerance of 2 seconds:
 		d, err := timeUntilSchedule(instance.Spec.Schedule)
 		if err != nil {
 			reqLogger.Error(err, "Schedule parsing failure")
-			// Error reading the schedule - requeue the request:
+			// Error reading the schedule. Wait until it is fixed.
 			return reconcile.Result{}, err
 		}
 		reqLogger.Info("Schedule parsing done", "Result", "diff", fmt.Sprintf("%v", d))
@@ -115,7 +114,6 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 			// Not yet time to execute the command, wait until the scheduled time
 			return reconcile.Result{RequeueAfter: d}, nil
 		}
-
 		reqLogger.Info("It's time!", "Ready to execute", instance.Spec.Command)
 		instance.Status.Phase = cnatv1alpha1.PhaseRunning
 	case cnatv1alpha1.PhaseRunning:
@@ -123,29 +121,30 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 		pod := newPodForCR(instance)
 		// Set At instance as the owner and controller
 		if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		found := &corev1.Pod{}
-		err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-		// Try to see if the pod already exists and if not
-		// (which we expect) then create a one-shot pod as per spec:
-		if err != nil && errors.IsNotFound(err) {
-			err = r.client.Create(context.TODO(), pod)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			reqLogger.Info("Pod launched", "name", pod.Name)
-			instance.Status.Phase = cnatv1alpha1.PhaseDone
-		} else if err != nil {
 			// requeue with error
 			return reconcile.Result{}, err
 		}
-		if found.Status.Phase != corev1.PodFailed && found.Status.Phase != corev1.PodSucceeded {
+		found := &corev1.Pod{}
+		err = r.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		// Try to see if the pod already exists and if not
+		// (which we expect) then create a one-shot pod as per spec:
+		if err != nil && errors.IsNotFound(err) {
+			err = r.Create(context.TODO(), pod)
+			if err != nil {
+				// requeue with error
+				return reconcile.Result{}, err
+			}
+			reqLogger.Info("Pod launched", "name", pod.Name)
+		} else if err != nil {
+			// requeue with error
+			return reconcile.Result{}, err
+		} else if found.Status.Phase == corev1.PodFailed || found.Status.Phase == corev1.PodSucceeded {
+			reqLogger.Info("Container terminated", "reason", found.Status.Reason, "message", found.Status.Message)
+			instance.Status.Phase = cnatv1alpha1.PhaseDone
+		} else {
 			// don't requeue because it will happen automatically when the pod status changes
 			return reconcile.Result{}, nil
 		}
-		reqLogger.Info("Container terminated", "reason", found.Status.Reason, "message", found.Status.Message)
-		instance.Status.Phase = cnatv1alpha1.PhaseDone
 	case cnatv1alpha1.PhaseDone:
 		reqLogger.Info("Phase: DONE")
 		return reconcile.Result{}, nil
@@ -155,7 +154,7 @@ func (r *ReconcileAt) Reconcile(request reconcile.Request) (reconcile.Result, er
 	}
 
 	// Update the At instance, setting the status to the respective phase:
-	err = r.client.Status().Update(context.TODO(), instance)
+	err = r.Status().Update(context.TODO(), instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
