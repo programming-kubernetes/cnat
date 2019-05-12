@@ -15,9 +15,7 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the cnat v1alpha1 API group
-// +k8s:openapi-gen=true
-// +k8s:deepcopy-gen=package,register
-// +k8s:conversion-gen=github.com/programming-kubernetes/cnat/cnat-kubebuilder/pkg/apis/cnat
-// +k8s:defaulter-gen=TypeMeta
+//
+// +k8s:deepcopy-gen=package
 // +groupName=cnat.programming-kubernetes.info
 package v1alpha1
