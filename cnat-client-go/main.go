@@ -56,9 +56,7 @@ func main() {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 	cnatInformerFactory := informers.NewSharedInformerFactory(cnatClient, time.Second*30)
 
-	controller := NewController(kubeClient, cnatClient,
-		kubeInformerFactory.Apps().V1().Deployments(),
-		cnatInformerFactory.Cnat().V1alpha1().Ats())
+	controller := NewController(kubeClient, cnatClient, cnatInformerFactory.Cnat().V1alpha1().Ats())
 
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh))
 	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
