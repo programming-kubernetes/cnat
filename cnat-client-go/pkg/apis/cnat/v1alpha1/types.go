@@ -50,8 +50,7 @@ type AtStatus struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// At is the Schema for the ats API
-// +k8s:openapi-gen=true
+// At runs a command at a given schedule.
 type At struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
