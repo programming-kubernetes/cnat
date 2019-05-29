@@ -27,3 +27,9 @@ YAY
 ```
 
 Note that the execution time (`schedule`) is given in [UTC](https://www.utctime.net/).
+
+In order to use the cnat custom resource, you have to run the respective custom controller, implemented here in three different ways:
+
+* Following the `sample-controller` in [cnat-client-go](cnat-client-go/)
+* Using Kubebuilder in [cnat-kubebuilder](cnat-kubebuilder/)
+* Using the Operator SDK in [cnat-operator](cnat-operator/)
