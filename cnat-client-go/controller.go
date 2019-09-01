@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -211,7 +212,7 @@ func (c *Controller) syncHandler(key string) (time.Duration, error) {
 	}
 
 	// Get the At resource with this namespace/name
-	instance, err := c.atLister.Ats(namespace).Get(name)
+	original, err := c.atLister.Ats(namespace).Get(name)
 	if err != nil {
 		// The At resource may no longer exist, in which case we stop
 		// processing.
@@ -222,6 +223,9 @@ func (c *Controller) syncHandler(key string) (time.Duration, error) {
 
 		return time.Duration(0), err
 	}
+
+	// Clone because the original object is owned by the lister.
+	instance := original.DeepCopy()
 
 	// If no phase set, default to pending (the initial phase):
 	if instance.Status.Phase == "" {
@@ -286,10 +290,12 @@ func (c *Controller) syncHandler(key string) (time.Duration, error) {
 		return time.Duration(0), nil
 	}
 
-	// Update the At instance, setting the status to the respective phase:
-	_, err = c.cnatClientset.CnatV1alpha1().Ats(instance.Namespace).UpdateStatus(instance)
-	if err != nil {
-		return time.Duration(0), err
+	if !reflect.DeepEqual(original, instance) {
+		// Update the At instance, setting the status to the respective phase:
+		_, err = c.cnatClientset.CnatV1alpha1().Ats(instance.Namespace).UpdateStatus(instance)
+		if err != nil {
+			return time.Duration(0), err
+		}
 	}
 
 	// Don't requeue. We should be reconcile because either the pod or the CR changes.
