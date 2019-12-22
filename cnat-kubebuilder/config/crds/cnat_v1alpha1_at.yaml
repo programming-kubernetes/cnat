@@ -11,6 +11,8 @@ spec:
     kind: At
     plural: ats
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       properties:
