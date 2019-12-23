@@ -1,6 +1,6 @@
 # Development
 
-Install [Kubebuilder](https://book.kubebuilder.io/quick_start.html) and then bootstrap the `At` operator as follows:
+Install [Kubebuilder](https://book.kubebuilder.io/quick-start.html) and then bootstrap the `At` operator as follows:
 
 ```bash
 $ mkdir cnat-kubebuilder && cd $_
