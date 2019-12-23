@@ -286,7 +286,7 @@ func (c *Controller) syncHandler(key string) (time.Duration, error) {
 		klog.Infof("instance %s: phase: DONE", key)
 		return time.Duration(0), nil
 	default:
-		klog.Infof("instance %s: NOP")
+		klog.Infof("instance %s: NOP", key)
 		return time.Duration(0), nil
 	}
 
