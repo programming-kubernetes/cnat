@@ -49,6 +49,7 @@ type AtStatus struct {
 
 // At is the Schema for the ats API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type At struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
